@@ -1,0 +1,110 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Energy Entry - Simple</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:18px;max-width:720px}
+    input,button{padding:10px;margin:6px 0;width:100%;box-sizing:border-box}
+    .row{display:flex;gap:8px}
+    .row> *{flex:1}
+    .card{border:1px solid #ddd;padding:14px;border-radius:8px;margin:10px 0}
+    ul{padding-left:18px}
+  </style>
+</head>
+<body>
+  <h2>Energy Entry</h2>
+  <div class="card">
+    <label><strong>Name</strong><br><input id="name" placeholder="e.g., sonu" /></label>
+    <label><strong>Code</strong><br><input id="code" placeholder="e.g., 1122" /></label>
+    <label><strong>Number (reading)</strong><br><input id="number" placeholder="e.g., 90000" /></label>
+    <div class="row">
+      <button id="submit">Submit</button>
+      <button id="fetch">Show previous</button>
+    </div>
+    <div id="msg"></div>
+  </div>
+
+  <div class="card">
+    <h3>Previous entries for this Name+Code</h3>
+    <div id="results">No query yet.</div>
+  </div>
+
+<script>
+  // Replace this with your Apps Script web app URL
+  const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbySLaPp3bS5YTsEi8pLKDOmf8lRpvmYUNHy0cqzPpqcYyKVjtJJJ5t8v5gfJDQ0hsFlJw/exec';
+
+  const $ = id => document.getElementById(id);
+  function showMsg(m, isErr=false){ $('msg').innerText = m; $('msg').style.color = isErr ? 'crimson' : 'green'; }
+
+  async function submitEntry(){
+    const name = $('name').value.trim();
+    const code = $('code').value.trim();
+    const number = $('number').value.trim();
+    if (!name || !code || !number) {
+      showMsg('Please fill all fields', true); return;
+    }
+
+    try {
+      const payload = { name, code, number };
+      const res = await fetch(WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const j = await res.json();
+      if (j.success) {
+        showMsg('Saved ✓');
+        $('number').value = '';
+        fetchEntries(); // auto-refresh
+      } else {
+        showMsg('Error: ' + (j.error || 'unknown'), true);
+      }
+    } catch (err) {
+      showMsg('Network error: ' + err, true);
+    }
+  }
+
+  async function fetchEntries(){
+    const name = $('name').value.trim();
+    const code = $('code').value.trim();
+    if (!name || !code) {
+      showMsg('Please enter name and code to fetch', true); return;
+    }
+    try {
+      const url = new URL(WEB_APP_URL);
+      url.searchParams.set('name', name);
+      url.searchParams.set('code', code);
+      const res = await fetch(url.toString(), { method: 'GET' });
+      const j = await res.json();
+      if (j.success) {
+        renderResults(j.rows || []);
+        showMsg('Loaded ' + (j.rows? j.rows.length : 0) + ' rows');
+      } else {
+        showMsg('Error: ' + (j.error || 'unknown'), true);
+      }
+    } catch (err) {
+      showMsg('Network error: ' + err, true);
+    }
+  }
+
+  function renderResults(rows){
+    if (!rows || rows.length === 0) {
+      $('results').innerHTML = '<em>No entries found.</em>';
+      return;
+    }
+    // Sort by timestamp ascending (older first)
+    rows.sort((a,b)=> new Date(a.timestamp) - new Date(b.timestamp));
+    const list = rows.map(r => `<li>${new Date(r.timestamp).toLocaleString()} → ${r.number}</li>`);
+    $('results').innerHTML = '<ol>' + list.join('') + '</ol>';
+  }
+
+  $('submit').addEventListener('click', submitEntry);
+  $('fetch').addEventListener('click', fetchEntries);
+
+  // Optional: allow pressing Enter in number to submit
+  $('number').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') submitEntry(); });
+</script>
+</body>
+</html>
