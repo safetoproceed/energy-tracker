@@ -1,110 +1,99 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Energy Entry - Simple</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:18px;max-width:720px}
-    input,button{padding:10px;margin:6px 0;width:100%;box-sizing:border-box}
-    .row{display:flex;gap:8px}
-    .row> *{flex:1}
-    .card{border:1px solid #ddd;padding:14px;border-radius:8px;margin:10px 0}
-    ul{padding-left:18px}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Energy Tracker</title>
+<style>
+  body { font-family: Arial, sans-serif; background:#f2f2f2; display:flex; justify-content:center; align-items:center; min-height:100vh; }
+  .container { background:white; padding:20px 30px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.2); width:300px; }
+  input { width:100%; padding:10px; margin:8px 0; border:1px solid #ccc; border-radius:5px; }
+  button { width:100%; padding:10px; margin:8px 0; border:none; border-radius:5px; background:#28a745; color:white; font-size:16px; cursor:pointer; }
+  button:hover { background:#218838; }
+  #output { margin-top:15px; background:#f8f9fa; padding:10px; border-radius:5px; max-height:200px; overflow:auto; }
+</style>
 </head>
 <body>
-  <h2>Energy Entry</h2>
-  <div class="card">
-    <label><strong>Name</strong><br><input id="name" placeholder="e.g., sonu" /></label>
-    <label><strong>Code</strong><br><input id="code" placeholder="e.g., 1122" /></label>
-    <label><strong>Number (reading)</strong><br><input id="number" placeholder="e.g., 90000" /></label>
-    <div class="row">
-      <button id="submit">Submit</button>
-      <button id="fetch">Show previous</button>
-    </div>
-    <div id="msg"></div>
-  </div>
-
-  <div class="card">
-    <h3>Previous entries for this Name+Code</h3>
-    <div id="results">No query yet.</div>
-  </div>
+<div class="container">
+  <h2>Energy Tracker</h2>
+  <input type="text" id="name" placeholder="Your Name" />
+  <input type="text" id="code" placeholder="Code" />
+  <input type="number" id="number" placeholder="Energy Reading" />
+  <button id="submitBtn">Submit</button>
+  <button id="fetchBtn">Show Previous Entries</button>
+  <div id="output"></div>
+</div>
 
 <script>
-  // Replace this with your Apps Script web app URL
-  const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbztEp6t-HvgELU97n03EwROZGsEmKn0LeLb67aqnLBgzcjc817xVG9_WJTC4Lj_9LHhQA/exec';
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbztEp6t-HvgELU97n03EwROZGsEmKn0LeLb67aqnLBgzcjc817xVG9_WJTC4Lj_9LHhQA/exec';
 
-  const $ = id => document.getElementById(id);
-  function showMsg(m, isErr=false){ $('msg').innerText = m; $('msg').style.color = isErr ? 'crimson' : 'green'; }
+const submitBtn = document.getElementById('submitBtn');
+const fetchBtn = document.getElementById('fetchBtn');
+const output = document.getElementById('output');
 
-  async function submitEntry(){
-    const name = $('name').value.trim();
-    const code = $('code').value.trim();
-    const number = $('number').value.trim();
-    if (!name || !code || !number) {
-      showMsg('Please fill all fields', true); return;
+submitBtn.addEventListener('click', async () => {
+  const name = document.getElementById('name').value.trim();
+  const code = document.getElementById('code').value.trim();
+  const number = document.getElementById('number').value.trim();
+
+  if(!name || !code || !number) {
+    alert('Please fill all fields');
+    return;
+  }
+
+  try {
+    const res = await fetch(WEB_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, code, number })
+    });
+    const data = await res.json();
+    if(data.success){
+      alert('Entry saved successfully!');
+      document.getElementById('number').value = '';
+      showPrevious(name, code);
+    } else {
+      alert('Error: ' + (data.error || 'Unknown error'));
     }
+  } catch(err){
+    alert('Network error. Please try again.');
+    console.error(err);
+  }
+});
 
-    try {
-      const payload = { name, code, number };
-      const res = await fetch(WEB_APP_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+fetchBtn.addEventListener('click', () => {
+  const name = document.getElementById('name').value.trim();
+  const code = document.getElementById('code').value.trim();
+  if(!name || !code) {
+    alert('Enter Your Name and Code first');
+    return;
+  }
+  showPrevious(name, code);
+});
+
+async function showPrevious(name, code){
+  try {
+    const res = await fetch(`${WEB_APP_URL}?name=${encodeURIComponent(name)}&code=${encodeURIComponent(code)}`);
+    const data = await res.json();
+    if(data.success){
+      if(data.rows.length === 0){
+        output.innerHTML = 'No previous entries found.';
+        return;
+      }
+      let html = '<strong>Previous Entries:</strong><br>';
+      data.rows.forEach(row => {
+        const date = new Date(row.timestamp);
+        html += `${date.toLocaleString()} → ${row.number}<br>`;
       });
-      const j = await res.json();
-      if (j.success) {
-        showMsg('Saved ✓');
-        $('number').value = '';
-        fetchEntries(); // auto-refresh
-      } else {
-        showMsg('Error: ' + (j.error || 'unknown'), true);
-      }
-    } catch (err) {
-      showMsg('Network error: ' + err, true);
+      output.innerHTML = html;
+    } else {
+      output.innerHTML = 'Error fetching entries.';
     }
+  } catch(err){
+    output.innerHTML = 'Network error.';
+    console.error(err);
   }
-
-  async function fetchEntries(){
-    const name = $('name').value.trim();
-    const code = $('code').value.trim();
-    if (!name || !code) {
-      showMsg('Please enter name and code to fetch', true); return;
-    }
-    try {
-      const url = new URL(WEB_APP_URL);
-      url.searchParams.set('name', name);
-      url.searchParams.set('code', code);
-      const res = await fetch(url.toString(), { method: 'GET' });
-      const j = await res.json();
-      if (j.success) {
-        renderResults(j.rows || []);
-        showMsg('Loaded ' + (j.rows? j.rows.length : 0) + ' rows');
-      } else {
-        showMsg('Error: ' + (j.error || 'unknown'), true);
-      }
-    } catch (err) {
-      showMsg('Network error: ' + err, true);
-    }
-  }
-
-  function renderResults(rows){
-    if (!rows || rows.length === 0) {
-      $('results').innerHTML = '<em>No entries found.</em>';
-      return;
-    }
-    // Sort by timestamp ascending (older first)
-    rows.sort((a,b)=> new Date(a.timestamp) - new Date(b.timestamp));
-    const list = rows.map(r => `<li>${new Date(r.timestamp).toLocaleString()} → ${r.number}</li>`);
-    $('results').innerHTML = '<ol>' + list.join('') + '</ol>';
-  }
-
-  $('submit').addEventListener('click', submitEntry);
-  $('fetch').addEventListener('click', fetchEntries);
-
-  // Optional: allow pressing Enter in number to submit
-  $('number').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') submitEntry(); });
+}
 </script>
 </body>
 </html>
