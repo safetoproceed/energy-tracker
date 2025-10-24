@@ -5,12 +5,48 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Energy Tracker</title>
 <style>
-  body { font-family: Arial, sans-serif; background:#f2f2f2; display:flex; justify-content:center; align-items:center; min-height:100vh; }
-  .container { background:white; padding:20px 30px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.2); width:300px; }
-  input { width:100%; padding:10px; margin:8px 0; border:1px solid #ccc; border-radius:5px; }
-  button { width:100%; padding:10px; margin:8px 0; border:none; border-radius:5px; background:#28a745; color:white; font-size:16px; cursor:pointer; }
-  button:hover { background:#218838; }
-  #output { margin-top:15px; background:#f8f9fa; padding:10px; border-radius:5px; max-height:200px; overflow:auto; }
+  body {
+    font-family: Arial, sans-serif;
+    background: #f2f2f2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+  .container {
+    background: white;
+    padding: 20px 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    width: 300px;
+  }
+  input {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  button {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border: none;
+    border-radius: 5px;
+    background: #28a745;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  button:hover { background: #218838; }
+  #output {
+    margin-top: 15px;
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 5px;
+    max-height: 200px;
+    overflow: auto;
+  }
 </style>
 </head>
 <body>
@@ -25,7 +61,7 @@
 </div>
 
 <script>
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyacOndtscV7GWBTAGKdMpGxOw0ad988Hor05c3zuKMRRaLZGb4ZYXu3zl1FAe4_xy5xQ/exec';
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbx2Ejq9uZ9iPzi__dSLCnW4OvwYfG2uj6Ud4Kos0lWAL-QM9kPhf5HnR0o2wBhv-_o/exec';
 
 const submitBtn = document.getElementById('submitBtn');
 const fetchBtn = document.getElementById('fetchBtn');
@@ -97,4 +133,3 @@ async function showPrevious(name, code){
 </script>
 </body>
 </html>
-
